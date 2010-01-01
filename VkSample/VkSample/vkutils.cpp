@@ -57,18 +57,36 @@ bool mVkDevice::enumeratePhysicalDevices(const mVkInstance& inst)
         _gpu = physicalDevices[0];
     }
 
-    bool ret = getPhysicalDeviceProperties();
+    bool ret = getPhysicalDeviceProperties(inst);
 
     return (err == VK_SUCCESS) && (ret);
 }
 
-bool mVkDevice::getPhysicalDeviceProperties()
+bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst)
 {
     VkPhysicalDeviceProperties devProperties;
     VkPhysicalDeviceFeatures   devFeatures;
 
     vkGetPhysicalDeviceProperties(_gpu, &devProperties);
     vkGetPhysicalDeviceFeatures(_gpu, &devFeatures);
+
+    // Get the VK surface that we'd render into. This is some windows specific code.
+    {
+        extern HINSTANCE hInst;
+        extern HWND windowHandle;
+        VkResult ret = VK_SUCCESS;
+
+        VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
+        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        surfaceCreateInfo.hinstance = hInst;
+        surfaceCreateInfo.hwnd      = windowHandle;
+        surfaceCreateInfo.pNext     = NULL;
+        surfaceCreateInfo.flags     = 0;
+
+        void* ptr = vkGetInstanceProcAddr(inst.getInstance(), "vkCreateWin32SurfaceKHR");
+        ret = vkCreateWin32SurfaceKHR(inst.getInstance(), &surfaceCreateInfo, NULL, &_surface);
+        assert(ret == VK_SUCCESS);
+    }
 
     // Reports properties of the queues of the specified physical device.
     vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &_queueFamilyCount, nullptr);
@@ -80,13 +98,18 @@ bool mVkDevice::getPhysicalDeviceProperties()
     {
         std::vector<VkQueueFamilyProperties> queueFamilyProperty(_queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &_queueFamilyCount, &queueFamilyProperty[0]);
-        
+
         for (uint32_t i = 0; i < _queueFamilyCount; ++i) 
         {
-            if ((queueFamilyProperty[i].queueCount > 0) &&
+            VkBool32 supportsPresent;
+            vkGetPhysicalDeviceSurfaceSupportKHR(_gpu, i, _surface, &supportsPresent);
+
+            if (supportsPresent &&
+                (queueFamilyProperty[i].queueCount > 0) &&
                 (queueFamilyProperty[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) 
             {
                 _queueFamilyIndex = i;
+                //context.presentQueueIdx = j;
                 break;
             }
         }
@@ -118,14 +141,59 @@ bool mVkDevice::createDevice()
         devCreateInfo.enabledLayerCount       = 0;
         devCreateInfo.ppEnabledLayerNames     = NULL;
         devCreateInfo.enabledExtensionCount   = 0;
-        devCreateInfo.ppEnabledExtensionNames = NULL;
-        devCreateInfo.pEnabledFeatures        = NULL;
+        const char *deviceExtensions[] = { "VK_KHR_swapchain" };
+        devCreateInfo.ppEnabledExtensionNames = deviceExtensions;
+        devCreateInfo.enabledExtensionCount = 1;
+
+        VkPhysicalDeviceFeatures features = {};
+        features.shaderClipDistance = VK_TRUE;
+        devCreateInfo.pEnabledFeatures = &features;
     }
 
     if (vkCreateDevice(_gpu, &devCreateInfo, nullptr, &_device) != VK_SUCCESS) {
         VK_LOG("Could not create Vulkan device!");
         return false;
     }
+
+    return true;
+}
+
+bool mVkDevice::createDeviceQueue()
+{
+    vkGetDeviceQueue(_device, _queueFamilyIndex, 0, &_deviceQueue);
+    
+    // @todo: Add error check here!
+    return true;
+}
+
+mkSwapChain::mkSwapChain()
+{
+
+}
+
+mkSwapChain::~mkSwapChain()
+{
+
+}
+
+bool mkSwapChain::createSwapChain(const mVkDevice& gpu)
+{
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &formatCount, NULL);
+    std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &formatCount, &surfaceFormats[0]);
+
+    // If the format list includes just one entry of VK_FORMAT_UNDEFINED, the surface has
+    // no preferred format. Otherwise, at least one supported format will be returned.
+    VkFormat colorFormat;
+    if (formatCount == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
+        colorFormat = VK_FORMAT_B8G8R8_UNORM;
+    }
+    else {
+        colorFormat = surfaceFormats[0].format;
+    }
+    VkColorSpaceKHR colorSpace;
+    colorSpace = surfaceFormats[0].colorSpace;
 
     return true;
 }

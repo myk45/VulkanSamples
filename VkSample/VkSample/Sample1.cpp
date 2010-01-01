@@ -7,28 +7,26 @@ void vkStuff()
 {
     mVkInstance inst;
     mVkDevice dev;
+    mkSwapChain swapChain;
+
     bool ret = inst.createInstance();
+    assert(ret);
+    VK_GUI_LOG("Created Instance successfully");
 
-    if (ret) 
-    {
-        VK_GUI_LOG("Created Instance successfully");
+    ret = dev.enumeratePhysicalDevices(inst);
+    assert(ret);
+    VK_GUI_LOG("Device enumeration done successfully");
 
-        ret = dev.enumeratePhysicalDevices(inst);
-        if (inst.getInstance() == VK_NULL_HANDLE)
-        {
-            VK_LOG("Error creating obtaining physical device!");
-            exit(0);
-        }
+    ret = dev.createDevice();
+    assert(ret);
+    VK_GUI_LOG("Vulkan device created");
+    
+    ret = dev.createDeviceQueue();
+    assert(ret);
+    VK_GUI_LOG("Device queue created successfully");
 
-        VK_GUI_LOG("Device enumeration done successfully");
-    }
+    ret = swapChain.createSwapChain(dev);
+    assert(ret);
+    VK_GUI_LOG("WIN32 swapchain created successfully");
 
-    if (ret)
-    {
-        ret = dev.createDevice();
-        if (ret)
-        {
-            VK_GUI_LOG("Vulkan device created");
-        }
-    }
 }

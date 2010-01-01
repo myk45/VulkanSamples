@@ -6,6 +6,7 @@
 // STD lib.
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
 
 // STL
 #include <vector>
@@ -47,6 +48,7 @@ public:
     bool enumeratePhysicalDevices(const mVkInstance& inst);
 
     bool createDevice();
+    bool createDeviceQueue();
 
     inline const VkPhysicalDevice& getPhysicalDevice() const
     {
@@ -58,14 +60,37 @@ public:
         return _device;
     }
 
+    inline const VkQueue& getDeviceQueue() const
+    {
+        return _deviceQueue;
+    }
+
+    inline const VkSurfaceKHR& getSurface() const
+    {
+        return _surface;
+    }
+
 private:
-    bool getPhysicalDeviceProperties();
+    bool getPhysicalDeviceProperties(const mVkInstance& inst);
 
     unsigned int        _gpuCount;
-    VkPhysicalDevice    _gpu;       // Let's assume 1 GPU.
+    VkPhysicalDevice    _gpu; // Let's assume 1 GPU.
     VkDevice            _device;
+    VkQueue             _deviceQueue;
     uint32_t            _queueFamilyCount;
     uint32_t            _queueFamilyIndex;
+    VkSurfaceKHR        _surface;
+};
+
+
+class mkSwapChain
+{
+public:
+    mkSwapChain();
+    ~mkSwapChain();
+
+    bool createSwapChain(const mVkDevice& gpu);
+private:
 };
 
 #endif
