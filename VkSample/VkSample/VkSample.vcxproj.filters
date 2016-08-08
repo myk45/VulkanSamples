@@ -47,6 +47,9 @@
     <ClCompile Include="vkutils.cpp">
       <Filter>Source Files\Vk_Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Sample1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VkSample.rc">

@@ -21,13 +21,7 @@ LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 
-void vkStuff()
-{
-    mVkInstance m;
-    bool ret = m.createInstance();
-    if (ret) MessageBox(NULL, (LPCWSTR)"Done", (LPCWSTR)"Alert", MB_OK);
-    int a;
-}
+extern void vkStuff();
 
 //------------------------------------------------------------------------------
 
