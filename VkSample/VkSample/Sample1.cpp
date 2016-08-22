@@ -27,6 +27,6 @@ void vkStuff()
 
     ret = swapChain.createSwapChain(dev);
     assert(ret);
-    VK_GUI_LOG("WIN32 swapchain created successfully");
+    VK_GUI_LOG("Win32 swapchain created successfully");
 
 }

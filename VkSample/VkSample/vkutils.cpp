@@ -7,6 +7,11 @@ mVkInstance::mVkInstance()
 
 bool mVkInstance::createInstance()
 {
+    const char* extensionNames[] = {
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+        VK_KHR_SURFACE_EXTENSION_NAME
+    };
+
     VkApplicationInfo app;
     {
         app.sType               = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -25,8 +30,8 @@ bool mVkInstance::createInstance()
         instInfo.pApplicationInfo        = &app;
         instInfo.enabledLayerCount       = 0;
         instInfo.ppEnabledLayerNames     = NULL;
-        instInfo.enabledExtensionCount   = 0;
-        instInfo.ppEnabledExtensionNames = NULL;
+        instInfo.enabledExtensionCount   = 2;
+        instInfo.ppEnabledExtensionNames = extensionNames;
    }
 
     VkResult err = vkCreateInstance(&instInfo, NULL, &_inst);
@@ -84,7 +89,7 @@ bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst)
         surfaceCreateInfo.flags     = 0;
 
         void* ptr = vkGetInstanceProcAddr(inst.getInstance(), "vkCreateWin32SurfaceKHR");
-        ret = vkCreateWin32SurfaceKHR(inst.getInstance(), &surfaceCreateInfo, NULL, &_surface);
+        ret =   vkCreateWin32SurfaceKHR(inst.getInstance(), &surfaceCreateInfo, NULL, &_surface);
         assert(ret == VK_SUCCESS);
     }
 
@@ -180,11 +185,10 @@ bool mkSwapChain::createSwapChain(const mVkDevice& gpu)
 {
     uint32_t formatCount = 0;
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &formatCount, NULL);
+    assert(formatCount);
     std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &formatCount, &surfaceFormats[0]);
 
-    // If the format list includes just one entry of VK_FORMAT_UNDEFINED, the surface has
-    // no preferred format. Otherwise, at least one supported format will be returned.
     VkFormat colorFormat;
     if (formatCount == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
         colorFormat = VK_FORMAT_B8G8R8_UNORM;
