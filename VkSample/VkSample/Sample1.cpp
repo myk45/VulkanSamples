@@ -7,7 +7,9 @@ void vkStuff()
 {
     mVkInstance inst;
     mVkDevice dev;
-    mkSwapChain swapChain;
+    mVkSwapChain swapChain;
+    mVkCommandPool cmdPool;
+    mVkImageView   swapChainImageView;
 
     bool ret = inst.createInstance();
     assert(ret);
@@ -29,4 +31,24 @@ void vkStuff()
     assert(ret);
     VK_GUI_LOG("Win32 swapchain created successfully");
 
+    ret = cmdPool.createCommandPool(dev);
+    assert(ret);
+    VK_GUI_LOG("Command pool created successfully");
+
+    ret = cmdPool.createCommandBuffer(dev);
+    assert(ret);
+    VK_GUI_LOG("2 command buffers created successfully");
+
+    ret = swapChainImageView.createSwapChainImageView(swapChain, dev);
+    assert(ret);
+    VK_GUI_LOG("Swap chain image view created successfully");
+
+    ret = createGraphicsPipeline(dev);
+    assert(ret);
+    VK_GUI_LOG("Graphics pipeline created successfully");
+
+    ret = createRenderPass(dev);
+    assert(ret);
+    VK_GUI_LOG("Render pass created successfully");
 }
+

@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <iostream>
+#include <fstream>
 
 // STL
 #include <vector>
@@ -70,6 +72,11 @@ public:
         return _surface;
     }
 
+    inline uint32_t getQueueFamilyIndex() const
+    {
+        return _queueFamilyIndex;
+    }
+
 private:
     bool getPhysicalDeviceProperties(const mVkInstance& inst);
 
@@ -83,14 +90,65 @@ private:
 };
 
 
-class mkSwapChain
+class mVkSwapChain
 {
 public:
-    mkSwapChain();
-    ~mkSwapChain();
+    mVkSwapChain();
+    ~mVkSwapChain();
 
     bool createSwapChain(const mVkDevice& gpu);
+
+    inline const VkSwapchainKHR& getSwapChain() const
+    {
+        return _swapChain;
+    }
+
+    inline const VkFormat& getColorFormat() const
+    {
+        return _colorFormat;
+    }
+
+private:
+    uint32_t           _width;
+    uint32_t           _height;
+    VkSwapchainKHR     _swapChain;
+    VkFormat           _colorFormat;
+};
+
+
+// This class has a list of command buffers.
+// The command buffer management is this class' responsibility.
+class mVkCommandPool 
+{
+public:
+    mVkCommandPool()   {}
+    ~mVkCommandPool()  {}
+
+    bool createCommandPool(const mVkDevice& gpu);
+    bool createCommandBuffer(const mVkDevice& gpu);
+
+private:
+    bool createInternalCommandBuffer(const mVkDevice& gpu);
+
+    VkCommandPool       _commandPool;
+    VkCommandBuffer     _setupCmdBuf;
+    VkCommandBuffer     _drawCmdBuf;
+};
+
+class mVkImageView
+{
+public:
+    mVkImageView()  {}
+    ~mVkImageView() {}
+
+    bool createSwapChainImageView(const mVkSwapChain& swapChain, const mVkDevice& gpu);
+
 private:
 };
+
+
+// TEMP CODE!
+bool createGraphicsPipeline(const mVkDevice& gpu);
+bool createRenderPass(const mVkDevice& gpu);
 
 #endif
