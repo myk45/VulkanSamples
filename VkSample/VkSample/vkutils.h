@@ -9,6 +9,9 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
+#include <functional>
+#include <limits>
 
 // STL
 #include <vector>
@@ -77,6 +80,16 @@ public:
         return _queueFamilyIndex;
     }
 
+    inline uint32_t getPresentFamilyIndex() const
+    {
+        return _presentQueueFamilyIndex;
+    }
+
+    inline const VkQueue& getPresentQueue() const
+    {
+        return _presentQueue;
+    }
+
 private:
     bool getPhysicalDeviceProperties(const mVkInstance& inst);
 
@@ -84,8 +97,10 @@ private:
     VkPhysicalDevice    _gpu; // Let's assume 1 GPU.
     VkDevice            _device;
     VkQueue             _deviceQueue;
+    VkQueue             _presentQueue;
     uint32_t            _queueFamilyCount;
     uint32_t            _queueFamilyIndex;
+    uint32_t            _presentQueueFamilyIndex;
     VkSurfaceKHR        _surface;
 };
 
@@ -127,6 +142,11 @@ public:
     bool createCommandPool(const mVkDevice& gpu);
     bool createCommandBuffer(const mVkDevice& gpu);
 
+    inline const VkCommandBuffer& getDrawCmdBuf() const
+    {
+        return _drawCmdBuf;
+    }
+
 private:
     bool createInternalCommandBuffer(const mVkDevice& gpu);
 
@@ -150,5 +170,9 @@ private:
 // TEMP CODE!
 bool createGraphicsPipeline(const mVkDevice& gpu);
 bool createRenderPass(const mVkDevice& gpu);
+bool createFramebuffers(const mVkDevice& gpu);
+bool createSemaphores(const mVkDevice& gpu);
+bool draw(const mVkCommandPool& cmdPool);
+bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain);
 
 #endif

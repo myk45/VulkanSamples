@@ -43,12 +43,28 @@ void vkStuff()
     assert(ret);
     VK_GUI_LOG("Swap chain image view created successfully");
 
+    ret = createRenderPass(dev);
+    assert(ret);
+    VK_GUI_LOG("Render pass created successfully");
+
     ret = createGraphicsPipeline(dev);
     assert(ret);
     VK_GUI_LOG("Graphics pipeline created successfully");
 
-    ret = createRenderPass(dev);
+    ret = createFramebuffers(dev);
     assert(ret);
-    VK_GUI_LOG("Render pass created successfully");
+    VK_GUI_LOG("Framebuffers created successfully");
+
+    ret = createSemaphores(dev);
+    assert(ret);
+    VK_GUI_LOG("Semaphores created successfully");
+
+    ret = draw(cmdPool);
+    assert(ret);
+    //VK_GUI_LOG("Issue comman created successfully");
+
+    ret = drawFrame(cmdPool, dev, swapChain);
+    assert(ret);
+    //VK_GUI_LOG("Framebuffers created successfully");
 }
 

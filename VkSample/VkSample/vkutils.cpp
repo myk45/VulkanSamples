@@ -1,6 +1,7 @@
 #include "vkutils.h"
 
 VkFormat hackFormat;
+std::vector<VkImageView> imageViews;
 
 mVkInstance::mVkInstance()
 {
@@ -116,6 +117,7 @@ bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst)
                 (queueFamilyProperty[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) 
             {
                 _queueFamilyIndex = i;
+                _presentQueueFamilyIndex = i;
                 //context.presentQueueIdx = j;
                 break;
             }
@@ -168,6 +170,7 @@ bool mVkDevice::createDevice()
 bool mVkDevice::createDeviceQueue()
 {
     vkGetDeviceQueue(_device, _queueFamilyIndex, 0, &_deviceQueue);
+    vkGetDeviceQueue(_device, _presentQueueFamilyIndex, 0, &_presentQueue);
     
     // @todo: Add error check here!
     return true;
@@ -318,7 +321,7 @@ bool mVkImageView::createSwapChainImageView(const mVkSwapChain& swapChain, const
     std::vector<VkImage> presentImages(imageCount);
     VkResult ret = vkGetSwapchainImagesKHR(gpu.getDevice(), swapChain.getSwapChain(), &imageCount, &presentImages[0]);
 
-    std::vector<VkImageView> imageViews(imageCount);
+    imageViews.resize(imageCount);
 
     for (uint32_t i = 0; i < presentImages.size(); i++) {
         VkImageViewCreateInfo createInfo = {};
@@ -383,6 +386,11 @@ mVkInstance::~mVkInstance()
 ///-------------------------------------------------------------
 VkPipelineLayout pipelineLayout;
 VkRenderPass     renderPass;
+VkPipeline       graphicsPipeline;
+VkSemaphore      imageAvailableSemaphore;
+VkSemaphore      renderFinishedSemaphore;
+std::vector<VkFramebuffer> frameBuffers;
+
 bool createGraphicsPipeline(const mVkDevice& gpu)
 {
     std::vector<char> vertShaderCode = readFile("shaders/vert.spv");
@@ -478,6 +486,25 @@ bool createGraphicsPipeline(const mVkDevice& gpu)
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
+    VkGraphicsPipelineCreateInfo pipelineInfo = {};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (vkCreateGraphicsPipelines(gpu.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+
     return true;
 }
 
@@ -513,5 +540,123 @@ bool createRenderPass(const mVkDevice& gpu)
         throw std::runtime_error("failed to create render pass!");
     }
 
+    return true;
+}
+
+bool createFramebuffers(const mVkDevice& gpu)
+{
+    frameBuffers.resize(imageViews.size());
+
+    for (size_t i = 0; i < imageViews.size(); i++) {
+        VkImageView attachments[] = {
+            imageViews[i]
+        };
+
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = 800;
+        framebufferInfo.height = 600;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(gpu.getDevice(), &framebufferInfo, nullptr, &frameBuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer!");
+        }
+    }
+
+    return true;
+}
+
+bool draw(const mVkCommandPool& cmdPool)
+{
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+    vkBeginCommandBuffer(cmdPool.getDrawCmdBuf(), &beginInfo);
+
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = frameBuffers[0];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = { 800, 600 };
+
+    VkClearValue clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    // Issue commands
+    {
+        vkCmdBeginRenderPass(cmdPool.getDrawCmdBuf(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(cmdPool.getDrawCmdBuf(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+        vkCmdDraw(cmdPool.getDrawCmdBuf(), 3, 1, 0, 0);
+        vkCmdEndRenderPass(cmdPool.getDrawCmdBuf());
+    }
+
+    if (vkEndCommandBuffer(cmdPool.getDrawCmdBuf()) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
+
+    return true;
+}
+
+bool createSemaphores(const mVkDevice& gpu)
+{
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS) 
+    {
+        throw std::runtime_error("failed to create semaphores!");
+    }
+
+    return true;
+}
+
+bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain)
+{
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(gpu.getDevice(), swapChain.getSwapChain(), 
+                          1500000, imageAvailableSemaphore, 
+                          VK_NULL_HANDLE, &imageIndex);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmdPool.getDrawCmdBuf();
+
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(gpu.getDeviceQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit draw command buffer!");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = { swapChain.getSwapChain() };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+
+    presentInfo.pImageIndices = &imageIndex;
+
+    vkQueuePresentKHR(gpu.getPresentQueue(), &presentInfo);
+    
     return true;
 }
