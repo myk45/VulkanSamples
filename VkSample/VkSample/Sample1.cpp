@@ -9,9 +9,10 @@ mVkSwapChain        swapChain;
 mVkCommandPool      cmdPool;
 mVkSemaphore        semaphore;
 mVkGraphicsPipeline graphicsPipeline;
+mVkRenderPass       renderPass;
 glfwWindowHelper    glfwHelper;
 
-void vkStuff()
+void initVk()
 {
     bool ret = inst.createInstance();
     assert(ret);
@@ -53,15 +54,15 @@ void vkStuff()
     assert(ret);
     LOG("2 command buffers created successfully");
 
-    ret = createRenderPass(dev);
+    ret = renderPass.createRenderPass(dev);
     assert(ret);
     LOG("Render pass created successfully");
 
-    ret = graphicsPipeline.createGraphicsPipeline(dev);
+    ret = graphicsPipeline.createGraphicsPipeline(dev, renderPass);
     assert(ret);
     LOG("Graphics pipeline created successfully");
 
-    ret = swapChain.createFramebuffers(dev);
+    ret = swapChain.createFramebuffers(dev, renderPass);
     assert(ret);
     LOG("Framebuffers created successfully");
 
@@ -69,14 +70,13 @@ void vkStuff()
     assert(ret);
     LOG("Semaphores created successfully");
 
-    ret = draw(cmdPool, swapChain, graphicsPipeline);
+    ret = recordCommands(cmdPool, swapChain, graphicsPipeline, renderPass);
     assert(ret);
 }
 
-void drawVKSTuff()
+void drawStuff()
 {
     bool ret = drawFrame(cmdPool, dev, swapChain, semaphore);
     assert(ret);
-    //LOG("Framebuffers created successfully");
 }
 

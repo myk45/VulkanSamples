@@ -857,8 +857,8 @@ private:
     }
 };
 
-extern void vkStuff();
-extern void drawVKSTuff();
+extern void initVk();
+extern void drawStuff();
 extern glfwWindowHelper    glfwHelper;
 
 int main() {
@@ -866,11 +866,11 @@ int main() {
 
     try {
         //app.run();
-        vkStuff();
+        initVk();
 
         while (!glfwWindowShouldClose(glfwHelper.getWindowHandle())) {
             glfwPollEvents();
-            drawVKSTuff();
+            drawStuff();
         }
     }
     catch (const std::runtime_error& e) {

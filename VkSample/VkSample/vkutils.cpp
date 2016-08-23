@@ -342,11 +342,7 @@ mVkInstance::~mVkInstance()
 
 }
 
-///-------------------------------------------------------------
-
-VkRenderPass     renderPass;
-
-bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu)
+bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu, const mVkRenderPass& rp)
 {
     std::vector<char> vertShaderCode = readFile("shaders/vert.spv");
     std::vector<char> fragShaderCode = readFile("shaders/frag.spv");
@@ -452,7 +448,7 @@ bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu)
     pipelineInfo.pMultisampleState      = &multisampling;
     pipelineInfo.pColorBlendState       = &colorBlending;
     pipelineInfo.layout                 = _pipelineLayout;
-    pipelineInfo.renderPass             = renderPass;
+    pipelineInfo.renderPass             = rp.getRenderPass();
     pipelineInfo.subpass                = 0;
     pipelineInfo.basePipelineHandle     = VK_NULL_HANDLE;
 
@@ -463,42 +459,42 @@ bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu)
     return true;
 }
 
-bool createRenderPass(const mVkDevice& gpu)
+bool mVkRenderPass::createRenderPass(const mVkDevice& gpu)
 {
     VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = hackFormat;
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.format         = hackFormat;
+    colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subPass = {};
-    subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subPass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subPass.colorAttachmentCount = 1;
-    subPass.pColorAttachments = &colorAttachmentRef;
+    subPass.pColorAttachments    = &colorAttachmentRef;
 
     VkRenderPassCreateInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subPass;
+    renderPassInfo.pAttachments    = &colorAttachment;
+    renderPassInfo.subpassCount    = 1;
+    renderPassInfo.pSubpasses      = &subPass;
 
-    if (vkCreateRenderPass(gpu.getDevice() , &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(gpu.getDevice() , &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 
     return true;
 }
 
-bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu)
+bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu, const mVkRenderPass& rp)
 {
     _swapChainFramebuffers.resize(_swapChainImageViews.size());
 
@@ -509,7 +505,7 @@ bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu)
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.renderPass = rp.getRenderPass();
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = 800;
@@ -524,7 +520,8 @@ bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu)
     return true;
 }
 
-bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, const mVkGraphicsPipeline& pipe)
+bool recordCommands(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, 
+                    const mVkGraphicsPipeline& pipe, const mVkRenderPass& rp)
 {
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -536,7 +533,7 @@ bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, const mVkGraphi
 
         VkRenderPassBeginInfo renderPassInfo = {};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.renderPass = rp.getRenderPass();
         renderPassInfo.framebuffer = swapChain.getFrameBuffers()[i];
         renderPassInfo.renderArea.offset = { 0, 0 };
         renderPassInfo.renderArea.extent = { 800, 600 };

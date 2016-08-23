@@ -147,6 +147,20 @@ private:
     uint32_t            _presentQueueFamilyIndex;
 };
 
+class mVkRenderPass
+{
+public:
+    bool createRenderPass(const mVkDevice& gpu);
+
+    inline const VkRenderPass& getRenderPass() const
+    {
+        return _renderPass;
+    }
+
+private:
+    VkRenderPass     _renderPass;
+};
+
 class mVkSwapChain
 {
 public:
@@ -155,7 +169,7 @@ public:
 
     bool createSwapChain(const mVkDevice& gpu, const glfwWindowHelper& glfwWindow);
     bool createSwapChainImageView(const mVkDevice& gpu);
-    bool createFramebuffers(const mVkDevice& gpu);
+    bool createFramebuffers(const mVkDevice& gpu, const mVkRenderPass& rp);
 
     inline const VkSwapchainKHR& getSwapChain() const
     {
@@ -284,7 +298,7 @@ public:
     mVkGraphicsPipeline()  {}
     ~mVkGraphicsPipeline() {}
 
-    bool createGraphicsPipeline(const mVkDevice& gpu);
+    bool createGraphicsPipeline(const mVkDevice& gpu, const mVkRenderPass& rp);
 
     inline const VkPipeline& getGraphicsPipeline() const
     {
@@ -320,8 +334,7 @@ private:
 };
 
 // TEMP CODE!
-bool createRenderPass(const mVkDevice& gpu);
-bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, const mVkGraphicsPipeline& pipe);
+bool recordCommands(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, const mVkGraphicsPipeline& pipe, const mVkRenderPass& rp);
 bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain, const mVkSemaphore& sem);
 
 #endif
