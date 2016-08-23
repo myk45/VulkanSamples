@@ -79,15 +79,14 @@ bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst)
     vkGetPhysicalDeviceFeatures(_gpu, &devFeatures);
 
     // Get the VK surface that we'd render into. This is some windows specific code.
+    // TODO: use glfw!
     {
-        extern HINSTANCE hInst;
-        extern HWND windowHandle;
         VkResult ret = VK_SUCCESS;
 
         VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        surfaceCreateInfo.hinstance = hInst;
-        surfaceCreateInfo.hwnd      = windowHandle;
+        /*surfaceCreateInfo.hinstance = hInst*/;
+        /*surfaceCreateInfo.hwnd      = windowHandle*/;
         surfaceCreateInfo.pNext     = NULL;
         surfaceCreateInfo.flags     = 0;
 

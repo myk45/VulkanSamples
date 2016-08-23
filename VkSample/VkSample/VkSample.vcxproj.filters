@@ -13,55 +13,24 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\Vk_Utils">
-      <UniqueIdentifier>{c272e5b5-b1df-4730-b56e-9d5b9b54855a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VkSample.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vkutils.h">
-      <Filter>Source Files\Vk_Utils</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VkSample.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vkutils.cpp">
-      <Filter>Source Files\Vk_Utils</Filter>
     </ClCompile>
     <ClCompile Include="Sample1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vkutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="VkSample.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="small.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="VkSample.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <ClInclude Include="vkutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

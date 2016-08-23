@@ -1,8 +1,6 @@
 #ifndef __VK_UTILS__
 #define __VK_UTILS__
 
-#include "stdafx.h"
-
 // STD lib.
 #include <cstdio>
 #include <cstdlib>
