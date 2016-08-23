@@ -1,12 +1,14 @@
 #include "vkutils.h"
 
 
-#define LOG(msg) printf("\n%s", msg);
+#define LOG(msg) printf("\n[Info] %s", msg);
 
 mVkInstance         inst;
 mVkDevice           dev;
 mVkSwapChain        swapChain;
 mVkCommandPool      cmdPool;
+mVkSemaphore        semaphore;
+mVkGraphicsPipeline graphicsPipeline;
 glfwWindowHelper    glfwHelper;
 
 void vkStuff()
@@ -55,7 +57,7 @@ void vkStuff()
     assert(ret);
     LOG("Render pass created successfully");
 
-    ret = createGraphicsPipeline(dev);
+    ret = graphicsPipeline.createGraphicsPipeline(dev);
     assert(ret);
     LOG("Graphics pipeline created successfully");
 
@@ -63,18 +65,17 @@ void vkStuff()
     assert(ret);
     LOG("Framebuffers created successfully");
 
-    ret = createSemaphores(dev);
+    ret = semaphore.createSemaphore(dev);
     assert(ret);
     LOG("Semaphores created successfully");
 
-    ret = draw(cmdPool, swapChain);
+    ret = draw(cmdPool, swapChain, graphicsPipeline);
     assert(ret);
-    //LOG("Issue comman created successfully");
 }
 
 void drawVKSTuff()
 {
-    bool ret = drawFrame(cmdPool, dev, swapChain);
+    bool ret = drawFrame(cmdPool, dev, swapChain, semaphore);
     assert(ret);
     //LOG("Framebuffers created successfully");
 }

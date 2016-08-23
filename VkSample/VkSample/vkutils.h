@@ -278,12 +278,50 @@ private:
     std::vector<VkCommandBuffer>     _drawCmdBufs;
 };
 
+class mVkGraphicsPipeline
+{
+public:
+    mVkGraphicsPipeline()  {}
+    ~mVkGraphicsPipeline() {}
+
+    bool createGraphicsPipeline(const mVkDevice& gpu);
+
+    inline const VkPipeline& getGraphicsPipeline() const
+    {
+        return _graphicsPipeline;
+    }
+
+private:
+    VkPipeline       _graphicsPipeline;
+    VkPipelineLayout _pipelineLayout;
+};
+
+class mVkSemaphore
+{
+public:
+    mVkSemaphore()  {}
+    ~mVkSemaphore() {}
+
+    bool createSemaphore(const mVkDevice& gpu);
+
+    inline const VkSemaphore& getImageAvailableSem() const
+    {
+        return _imageAvailableSemaphore;
+    }
+
+    inline const VkSemaphore& getRenderFinishedSem() const
+    {
+        return _renderFinishedSemaphore;
+    }
+
+private:
+    VkSemaphore         _imageAvailableSemaphore;
+    VkSemaphore         _renderFinishedSemaphore;
+};
 
 // TEMP CODE!
-bool createGraphicsPipeline(const mVkDevice& gpu);
 bool createRenderPass(const mVkDevice& gpu);
-bool createSemaphores(const mVkDevice& gpu);
-bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain);
-bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain);
+bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, const mVkGraphicsPipeline& pipe);
+bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain, const mVkSemaphore& sem);
 
 #endif

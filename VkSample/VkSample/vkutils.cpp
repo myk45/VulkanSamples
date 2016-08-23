@@ -343,13 +343,10 @@ mVkInstance::~mVkInstance()
 }
 
 ///-------------------------------------------------------------
-VkPipelineLayout pipelineLayout;
-VkRenderPass     renderPass;
-VkPipeline       graphicsPipeline;
-VkSemaphore      imageAvailableSemaphore;
-VkSemaphore      renderFinishedSemaphore;
 
-bool createGraphicsPipeline(const mVkDevice& gpu)
+VkRenderPass     renderPass;
+
+bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu)
 {
     std::vector<char> vertShaderCode = readFile("shaders/vert.spv");
     std::vector<char> fragShaderCode = readFile("shaders/frag.spv");
@@ -406,30 +403,30 @@ bool createGraphicsPipeline(const mVkDevice& gpu)
     viewportState.pScissors = &scissor;
 
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
-    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
+    rasterizer.sType                    = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable         = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable  = VK_FALSE;
+    rasterizer.polygonMode              = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth                = 1.0f;
+    rasterizer.cullMode                 = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace                = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.depthBiasEnable          = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
-    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable  = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable    = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
-    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlending.logicOpEnable = VK_FALSE;
-    colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &colorBlendAttachment;
+    colorBlending.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.logicOpEnable     = VK_FALSE;
+    colorBlending.logicOp           = VK_LOGIC_OP_COPY;
+    colorBlending.attachmentCount   = 1;
+    colorBlending.pAttachments      = &colorBlendAttachment;
     colorBlending.blendConstants[0] = 0.0f;
     colorBlending.blendConstants[1] = 0.0f;
     colorBlending.blendConstants[2] = 0.0f;
@@ -440,26 +437,26 @@ bool createGraphicsPipeline(const mVkDevice& gpu)
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    if (vkCreatePipelineLayout(gpu.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(gpu.getDevice(), &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shaderStages;
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssembly;
-    pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pRasterizationState = &rasterizer;
-    pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.sType                  = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount             = 2;
+    pipelineInfo.pStages                = shaderStages;
+    pipelineInfo.pVertexInputState      = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState    = &inputAssembly;
+    pipelineInfo.pViewportState         = &viewportState;
+    pipelineInfo.pRasterizationState    = &rasterizer;
+    pipelineInfo.pMultisampleState      = &multisampling;
+    pipelineInfo.pColorBlendState       = &colorBlending;
+    pipelineInfo.layout                 = _pipelineLayout;
+    pipelineInfo.renderPass             = renderPass;
+    pipelineInfo.subpass                = 0;
+    pipelineInfo.basePipelineHandle     = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(gpu.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(gpu.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
@@ -527,7 +524,7 @@ bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu)
     return true;
 }
 
-bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain)
+bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain, const mVkGraphicsPipeline& pipe)
 {
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -551,8 +548,8 @@ bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain)
         // Issue commands
         {
             vkCmdBeginRenderPass(cmdPool.getDrawCmdBuf()[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(cmdPool.getDrawCmdBuf()[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-            vkCmdDraw(cmdPool.getDrawCmdBuf()[i], 3, 1, 0, 0);
+            vkCmdBindPipeline(cmdPool.getDrawCmdBuf()[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipe.getGraphicsPipeline());
+            vkCmdDraw(cmdPool.getDrawCmdBuf()[i], 5, 2, 0, 0);
             vkCmdEndRenderPass(cmdPool.getDrawCmdBuf()[i]);
         }
 
@@ -564,31 +561,17 @@ bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain)
     return true;
 }
 
-bool createSemaphores(const mVkDevice& gpu)
-{
-    VkSemaphoreCreateInfo semaphoreInfo = {};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    if (vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS) 
-    {
-        throw std::runtime_error("failed to create semaphores!");
-    }
-
-    return true;
-}
-
-bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain)
+bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain, const mVkSemaphore& sem)
 {
     uint32_t imageIndex;
     vkAcquireNextImageKHR(gpu.getDevice(), swapChain.getSwapChain(), 
-                          15000000, imageAvailableSemaphore, 
+                          15000000, sem.getImageAvailableSem(), 
                           VK_NULL_HANDLE, &imageIndex);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+    VkSemaphore waitSemaphores[] = { sem.getImageAvailableSem() };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -597,7 +580,7 @@ bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmdPool.getDrawCmdBuf()[imageIndex];
 
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+    VkSemaphore signalSemaphores[] = { sem.getRenderFinishedSem() };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -619,5 +602,19 @@ bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain
 
     vkQueuePresentKHR(gpu.getPresentQueue(), &presentInfo);
     
+    return true;
+}
+
+bool mVkSemaphore::createSemaphore(const mVkDevice& gpu)
+{
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create semaphores!");
+    }
+
     return true;
 }
