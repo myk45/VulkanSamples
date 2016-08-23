@@ -265,8 +265,13 @@ bool mVkCommandPool::createInternalCommandBuffer(const mVkDevice& gpu)
     ret = vkAllocateCommandBuffers(gpu.getDevice(), &commandBufferAllocationInfo, &_setupCmdBuf);
     assert(ret == VK_SUCCESS);
 
-    ret = vkAllocateCommandBuffers(gpu.getDevice(), &commandBufferAllocationInfo, &_drawCmdBuf);
-    assert(ret == VK_SUCCESS);
+    // One command buffer per frame buffer. It's hardcoded now. We can get it from the swapchain interface.
+    // TODO: add swapchain interface code here.
+    _drawCmdBufs.resize(3);
+    for (int i = 0; i < 3; i++) {
+        ret = vkAllocateCommandBuffers(gpu.getDevice(), &commandBufferAllocationInfo, &_drawCmdBufs[i]);
+        assert(ret == VK_SUCCESS);
+    }
 
     return ret == VK_SUCCESS;
 }
@@ -528,31 +533,34 @@ bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain)
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-    vkBeginCommandBuffer(cmdPool.getDrawCmdBuf(), &beginInfo);
-
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChain.getFrameBuffers()[0];
-    renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = { 800, 600 };
-
-    VkClearValue clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
-
-    // Issue commands
+    for (unsigned int i = 0; i < cmdPool.getDrawCmdBuf().size(); i++)
     {
-        vkCmdBeginRenderPass(cmdPool.getDrawCmdBuf(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(cmdPool.getDrawCmdBuf(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-        vkCmdDraw(cmdPool.getDrawCmdBuf(), 3, 1, 0, 0);
-        vkCmdEndRenderPass(cmdPool.getDrawCmdBuf());
-    }
+        vkBeginCommandBuffer(cmdPool.getDrawCmdBuf()[i], &beginInfo);
 
-    if (vkEndCommandBuffer(cmdPool.getDrawCmdBuf()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+        VkRenderPassBeginInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = swapChain.getFrameBuffers()[i];
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent = { 800, 600 };
 
+        VkClearValue clearColor = { 0.2f, 0.9f, 0.2f, 1.0f };
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues = &clearColor;
+
+        // Issue commands
+        {
+            vkCmdBeginRenderPass(cmdPool.getDrawCmdBuf()[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindPipeline(cmdPool.getDrawCmdBuf()[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+            vkCmdDraw(cmdPool.getDrawCmdBuf()[i], 3, 1, 0, 0);
+            vkCmdEndRenderPass(cmdPool.getDrawCmdBuf()[i]);
+        }
+
+        if (vkEndCommandBuffer(cmdPool.getDrawCmdBuf()[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
+        }
+    }
+    
     return true;
 }
 
@@ -574,7 +582,7 @@ bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain
 {
     uint32_t imageIndex;
     vkAcquireNextImageKHR(gpu.getDevice(), swapChain.getSwapChain(), 
-                          1500000, imageAvailableSemaphore, 
+                          15000000, imageAvailableSemaphore, 
                           VK_NULL_HANDLE, &imageIndex);
 
     VkSubmitInfo submitInfo = {};
@@ -587,7 +595,7 @@ bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cmdPool.getDrawCmdBuf();
+    submitInfo.pCommandBuffers = &cmdPool.getDrawCmdBuf()[imageIndex];
 
     VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
     submitInfo.signalSemaphoreCount = 1;

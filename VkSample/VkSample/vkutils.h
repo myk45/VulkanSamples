@@ -265,24 +265,23 @@ public:
     bool createCommandPool(const mVkDevice& gpu);
     bool createCommandBuffer(const mVkDevice& gpu);
 
-    inline const VkCommandBuffer& getDrawCmdBuf() const
+    inline const std::vector<VkCommandBuffer>& getDrawCmdBuf() const
     {
-        return _drawCmdBuf;
+        return _drawCmdBufs;
     }
 
 private:
     bool createInternalCommandBuffer(const mVkDevice& gpu);
 
-    VkCommandPool       _commandPool;
-    VkCommandBuffer     _setupCmdBuf;
-    VkCommandBuffer     _drawCmdBuf;
+    VkCommandPool                    _commandPool;
+    VkCommandBuffer                  _setupCmdBuf;
+    std::vector<VkCommandBuffer>     _drawCmdBufs;
 };
 
 
 // TEMP CODE!
 bool createGraphicsPipeline(const mVkDevice& gpu);
 bool createRenderPass(const mVkDevice& gpu);
-bool createFramebuffers(const mVkDevice& gpu);
 bool createSemaphores(const mVkDevice& gpu);
 bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain);
 bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain swapChain);
