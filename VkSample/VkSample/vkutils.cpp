@@ -1,7 +1,17 @@
 #include "vkutils.h"
 
+static const std::vector<const char*> validationLayers = {
+    "VK_LAYER_LUNARG_standard_validation"
+};
+
+static const std::vector<const char*> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
+
 VkFormat hackFormat;
 std::vector<VkImageView> imageViews;
+
 
 mVkInstance::mVkInstance()
 {
@@ -50,7 +60,7 @@ bool mVkInstance::createInstance()
     return err == VK_SUCCESS;
 }
 
-bool mVkDevice::enumeratePhysicalDevices(const mVkInstance& inst)
+bool mVkDevice::enumeratePhysicalDevices(const mVkInstance& inst, const glfwWindowHelper& glfwWindow)
 {
     VkResult err = vkEnumeratePhysicalDevices(inst.getInstance(), &_gpuCount, NULL);
     if (err != VK_SUCCESS)
@@ -65,35 +75,18 @@ bool mVkDevice::enumeratePhysicalDevices(const mVkInstance& inst)
         _gpu = physicalDevices[0];
     }
 
-    bool ret = getPhysicalDeviceProperties(inst);
+    bool ret = getPhysicalDeviceProperties(inst, glfwWindow);
 
     return (err == VK_SUCCESS) && (ret);
 }
 
-bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst)
+bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst, const glfwWindowHelper& glfwWindow)
 {
     VkPhysicalDeviceProperties devProperties;
     VkPhysicalDeviceFeatures   devFeatures;
 
     vkGetPhysicalDeviceProperties(_gpu, &devProperties);
     vkGetPhysicalDeviceFeatures(_gpu, &devFeatures);
-
-    // Get the VK surface that we'd render into. This is some windows specific code.
-    // TODO: use glfw!
-    {
-        VkResult ret = VK_SUCCESS;
-
-        VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        /*surfaceCreateInfo.hinstance = hInst*/;
-        /*surfaceCreateInfo.hwnd      = windowHandle*/;
-        surfaceCreateInfo.pNext     = NULL;
-        surfaceCreateInfo.flags     = 0;
-
-        void* ptr = vkGetInstanceProcAddr(inst.getInstance(), "vkCreateWin32SurfaceKHR");
-        ret =   vkCreateWin32SurfaceKHR(inst.getInstance(), &surfaceCreateInfo, NULL, &_surface);
-        assert(ret == VK_SUCCESS);
-    }
 
     // Reports properties of the queues of the specified physical device.
     vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &_queueFamilyCount, nullptr);
@@ -109,7 +102,7 @@ bool mVkDevice::getPhysicalDeviceProperties(const mVkInstance& inst)
         for (uint32_t i = 0; i < _queueFamilyCount; ++i) 
         {
             VkBool32 supportsPresent;
-            vkGetPhysicalDeviceSurfaceSupportKHR(_gpu, i, _surface, &supportsPresent);
+            vkGetPhysicalDeviceSurfaceSupportKHR(_gpu, i, glfwWindow.getSurface(), &supportsPresent);
 
             if (supportsPresent &&
                 (queueFamilyProperty[i].queueCount > 0) &&
@@ -148,10 +141,8 @@ bool mVkDevice::createDevice()
         devCreateInfo.pQueueCreateInfos       = &queueCreateInfo;
         devCreateInfo.enabledLayerCount       = 0;
         devCreateInfo.ppEnabledLayerNames     = NULL;
-        devCreateInfo.enabledExtensionCount   = 0;
-        const char *deviceExtensions[] = { "VK_KHR_swapchain" };
-        devCreateInfo.ppEnabledExtensionNames = deviceExtensions;
-        devCreateInfo.enabledExtensionCount = 1;
+        devCreateInfo.enabledExtensionCount   = deviceExtensions.size();
+        devCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
         VkPhysicalDeviceFeatures features = {};
         features.shaderClipDistance = VK_TRUE;
@@ -185,92 +176,61 @@ mVkSwapChain::~mVkSwapChain()
 
 }
 
-
-// taken from https://av.dfki.de/~jhenriques/development.html
-bool mVkSwapChain::createSwapChain(const mVkDevice& gpu)
+bool mVkSwapChain::createSwapChain(const mVkDevice& gpu, const glfwWindowHelper& glfwWindow)
 {
-    uint32_t formatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &formatCount, NULL);
-    assert(formatCount);
-    std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &formatCount, &surfaceFormats[0]);
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(gpu, glfwWindow);
 
-    if (formatCount == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
-        _colorFormat = VK_FORMAT_B8G8R8_UNORM;
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+
+    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+        imageCount = swapChainSupport.capabilities.maxImageCount;
     }
-    else {
-        _colorFormat = surfaceFormats[0].format;
-    }
-    VkColorSpaceKHR colorSpace;
-    colorSpace = surfaceFormats[0].colorSpace;
-    hackFormat = _colorFormat;
 
-    VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &surfaceCapabilities);
+    VkSwapchainCreateInfoKHR createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = glfwWindow.getSurface();
 
-    // we are effectively looking for double-buffering:
-    // if surfaceCapabilities.maxImageCount == 0 there is actually no limit on the number of images! 
-    uint32_t desiredImageCount = 2;
-    if (desiredImageCount < surfaceCapabilities.minImageCount) 
+    createInfo.minImageCount = imageCount;
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent = extent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    uint32_t queueFamilyIndices[] = { gpu.getQueueFamilyIndex(), gpu.getPresentFamilyIndex() };
+
+    if (gpu.getQueueFamilyIndex() != gpu.getPresentFamilyIndex()) 
     {
-        desiredImageCount = surfaceCapabilities.minImageCount;
-    }
-    else if (surfaceCapabilities.maxImageCount != 0 &&
-        desiredImageCount > surfaceCapabilities.maxImageCount) 
-    {
-        desiredImageCount = surfaceCapabilities.maxImageCount;
-    }
-
-    VkExtent2D surfaceResolution = surfaceCapabilities.currentExtent;
-    if (surfaceResolution.width == -1) 
-    {
-        surfaceResolution.width  = 800;
-        surfaceResolution.height = 600;
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices;
     }
     else 
     {
-        _width  = surfaceResolution.width;
-        _height = surfaceResolution.height;
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
-    VkSurfaceTransformFlagBitsKHR preTransform = surfaceCapabilities.currentTransform;
-    if (surfaceCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) 
-    {
-        preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    VkResult res = vkCreateSwapchainKHR(gpu.getDevice(), &createInfo, nullptr, &_swapChain);
+    if (res != VK_SUCCESS) {
+        throw std::runtime_error("failed to create swap chain!");
     }
 
-    uint32_t presentModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &presentModeCount, NULL);
-    VkPresentModeKHR *presentModes = new VkPresentModeKHR[presentModeCount];
-    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu.getPhysicalDevice(), gpu.getSurface(), &presentModeCount, presentModes);
+    vkGetSwapchainImagesKHR(gpu.getDevice(), _swapChain, &imageCount, nullptr);
+    _swapChainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(gpu.getDevice(), _swapChain, &imageCount, _swapChainImages.data());
 
-    VkPresentModeKHR presentationMode = VK_PRESENT_MODE_FIFO_KHR;   // always supported.
-    for (uint32_t i = 0; i < presentModeCount; ++i) 
-    {
-        if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-            presentationMode = VK_PRESENT_MODE_MAILBOX_KHR;
-            break;
-        }
-    }
-    delete[] presentModes;
-
-    VkSwapchainCreateInfoKHR swapChainCreateInfo = {};
-    swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapChainCreateInfo.surface = gpu.getSurface();
-    swapChainCreateInfo.minImageCount = desiredImageCount;
-    swapChainCreateInfo.imageFormat = _colorFormat;
-    swapChainCreateInfo.imageColorSpace = colorSpace;
-    swapChainCreateInfo.imageExtent = surfaceResolution;
-    swapChainCreateInfo.imageArrayLayers = 1;
-    swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;   // <--
-    swapChainCreateInfo.preTransform = preTransform;
-    swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapChainCreateInfo.presentMode = presentationMode;
-    swapChainCreateInfo.clipped = true;     // If we want clipping outside the extents
-    // (remember our device features?)
-
-    VkResult res = vkCreateSwapchainKHR(gpu.getDevice(), &swapChainCreateInfo, NULL, &_swapChain);
+    _colorFormat     = surfaceFormat.format;
+    _swapChainExtent = extent;
 
     return res == VK_SUCCESS;
 }
@@ -311,23 +271,17 @@ bool mVkCommandPool::createInternalCommandBuffer(const mVkDevice& gpu)
     return ret == VK_SUCCESS;
 }
 
-bool mVkImageView::createSwapChainImageView(const mVkSwapChain& swapChain, const mVkDevice& gpu)
+bool mVkSwapChain::createSwapChainImageView(const mVkDevice& gpu)
 {
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(gpu.getDevice(), swapChain.getSwapChain(), &imageCount, NULL);
-    assert(imageCount);
+    VkResult ret = VK_SUCCESS;
+    _swapChainImageViews.resize(_swapChainImages.size());
 
-    std::vector<VkImage> presentImages(imageCount);
-    VkResult ret = vkGetSwapchainImagesKHR(gpu.getDevice(), swapChain.getSwapChain(), &imageCount, &presentImages[0]);
-
-    imageViews.resize(imageCount);
-
-    for (uint32_t i = 0; i < presentImages.size(); i++) {
+    for (uint32_t i = 0; i < _swapChainImages.size(); i++) {
         VkImageViewCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = presentImages[i];
+        createInfo.image = _swapChainImages[i];
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = swapChain.getColorFormat();
+        createInfo.format = _colorFormat;
         createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -338,8 +292,9 @@ bool mVkImageView::createSwapChainImageView(const mVkSwapChain& swapChain, const
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(gpu.getDevice(), &createInfo, NULL, &imageViews[i]) != VK_SUCCESS) {
-            return false;
+        ret = vkCreateImageView(gpu.getDevice(), &createInfo, nullptr, &_swapChainImageViews[i]);
+        if (ret != VK_SUCCESS) {
+            throw std::runtime_error("failed to create image views!");
         }
     }
 
@@ -388,7 +343,6 @@ VkRenderPass     renderPass;
 VkPipeline       graphicsPipeline;
 VkSemaphore      imageAvailableSemaphore;
 VkSemaphore      renderFinishedSemaphore;
-std::vector<VkFramebuffer> frameBuffers;
 
 bool createGraphicsPipeline(const mVkDevice& gpu)
 {
@@ -542,13 +496,13 @@ bool createRenderPass(const mVkDevice& gpu)
     return true;
 }
 
-bool createFramebuffers(const mVkDevice& gpu)
+bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu)
 {
-    frameBuffers.resize(imageViews.size());
+    _swapChainFramebuffers.resize(_swapChainImageViews.size());
 
-    for (size_t i = 0; i < imageViews.size(); i++) {
+    for (size_t i = 0; i < _swapChainImageViews.size(); i++) {
         VkImageView attachments[] = {
-            imageViews[i]
+            _swapChainImageViews[i]
         };
 
         VkFramebufferCreateInfo framebufferInfo = {};
@@ -560,7 +514,7 @@ bool createFramebuffers(const mVkDevice& gpu)
         framebufferInfo.height = 600;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(gpu.getDevice(), &framebufferInfo, nullptr, &frameBuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(gpu.getDevice(), &framebufferInfo, nullptr, &_swapChainFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
@@ -568,7 +522,7 @@ bool createFramebuffers(const mVkDevice& gpu)
     return true;
 }
 
-bool draw(const mVkCommandPool& cmdPool)
+bool draw(const mVkCommandPool& cmdPool, mVkSwapChain swapChain)
 {
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -579,7 +533,7 @@ bool draw(const mVkCommandPool& cmdPool)
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = frameBuffers[0];
+    renderPassInfo.framebuffer = swapChain.getFrameBuffers()[0];
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = { 800, 600 };
 

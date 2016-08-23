@@ -3,19 +3,27 @@
 
 #define LOG(msg) printf("\n%s", msg);
 
+mVkInstance         inst;
+mVkDevice           dev;
+mVkSwapChain        swapChain;
+mVkCommandPool      cmdPool;
+glfwWindowHelper    glfwHelper;
+
 void vkStuff()
 {
-    mVkInstance inst;
-    mVkDevice dev;
-    mVkSwapChain swapChain;
-    mVkCommandPool cmdPool;
-    mVkImageView   swapChainImageView;
-
     bool ret = inst.createInstance();
     assert(ret);
     LOG("Created Instance successfully");
 
-    ret = dev.enumeratePhysicalDevices(inst);
+    ret = glfwHelper.createWindow(800, 600);
+    assert(ret);
+    LOG("Window created successfully");
+
+    ret = glfwHelper.createWindowSurface(inst);
+    assert(ret);
+    LOG("Window surface created successfully");
+
+    ret = dev.enumeratePhysicalDevices(inst, glfwHelper);
     assert(ret);
     LOG("Device enumeration done successfully");
 
@@ -27,9 +35,13 @@ void vkStuff()
     assert(ret);
     LOG("Device queue created successfully");
 
-    ret = swapChain.createSwapChain(dev);
+    ret = swapChain.createSwapChain(dev, glfwHelper);
     assert(ret);
     LOG("Win32 swapchain created successfully");
+
+    ret = swapChain.createSwapChainImageView(dev);
+    assert(ret);
+    LOG("Win32 swapchain image view created successfully");
 
     ret = cmdPool.createCommandPool(dev);
     assert(ret);
@@ -39,10 +51,6 @@ void vkStuff()
     assert(ret);
     LOG("2 command buffers created successfully");
 
-    ret = swapChainImageView.createSwapChainImageView(swapChain, dev);
-    assert(ret);
-    LOG("Swap chain image view created successfully");
-
     ret = createRenderPass(dev);
     assert(ret);
     LOG("Render pass created successfully");
@@ -51,7 +59,7 @@ void vkStuff()
     assert(ret);
     LOG("Graphics pipeline created successfully");
 
-    ret = createFramebuffers(dev);
+    ret = swapChain.createFramebuffers(dev);
     assert(ret);
     LOG("Framebuffers created successfully");
 
@@ -59,11 +67,14 @@ void vkStuff()
     assert(ret);
     LOG("Semaphores created successfully");
 
-    ret = draw(cmdPool);
+    ret = draw(cmdPool, swapChain);
     assert(ret);
     //LOG("Issue comman created successfully");
+}
 
-    ret = drawFrame(cmdPool, dev, swapChain);
+void drawVKSTuff()
+{
+    bool ret = drawFrame(cmdPool, dev, swapChain);
     assert(ret);
     //LOG("Framebuffers created successfully");
 }

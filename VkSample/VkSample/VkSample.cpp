@@ -9,15 +9,13 @@
 #include <vector>
 #include <cstring>
 #include <set>
+#include "vkutils.h"
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
-
-const std::vector<const char*> validationLayers = {
+static const std::vector<const char*> validationLayers = {
     "VK_LAYER_LUNARG_standard_validation"
 };
 
-const std::vector<const char*> deviceExtensions = {
+static const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -149,19 +147,19 @@ private:
     }
 
     void initVulkan() {
-        createInstance();
-        setupDebugCallback();
-        createSurface();
-        pickPhysicalDevice();
-        createLogicalDevice();
-        createSwapChain();
-        createImageViews();
-        createRenderPass();
-        createGraphicsPipeline();
-        createFramebuffers();
-        createCommandPool();
-        createCommandBuffers();
-        createSemaphores();
+        createInstance();       // --> done!
+        setupDebugCallback();   // --> done!
+        createSurface();        // --> done!
+        pickPhysicalDevice();   // --> done!
+        createLogicalDevice();  // --> done!
+        createSwapChain();      // --> done!
+        createImageViews();     // --> done!
+        createRenderPass();     // --> done!
+        createGraphicsPipeline(); // --> done!
+        createFramebuffers();     // --> done!
+        createCommandPool();      // --> done!
+        createCommandBuffers();   // --> done!
+        createSemaphores();       // --> done!
     }
 
     void mainLoop() {
@@ -859,11 +857,21 @@ private:
     }
 };
 
+extern void vkStuff();
+extern void drawVKSTuff();
+extern glfwWindowHelper    glfwHelper;
+
 int main() {
     HelloTriangleApplication app;
 
     try {
-        app.run();
+        //app.run();
+        vkStuff();
+
+        while (!glfwWindowShouldClose(glfwHelper.getWindowHandle())) {
+            glfwPollEvents();
+            drawVKSTuff();
+        }
     }
     catch (const std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
