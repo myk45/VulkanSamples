@@ -1,6 +1,5 @@
 #include "vkutils.h"
 
-
 #define LOG(msg) printf("\n[Info] %s", msg);
 
 mVkInstance         inst;
