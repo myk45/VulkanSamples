@@ -44,7 +44,7 @@ bool DemoBase::init()
     assert(ret);
     LOG("2 command buffers created successfully");
 
-    ret = _renderPass.createRenderPass(_dev);
+    ret = _renderPass.createRenderPass(_dev, _swapChain);
     assert(ret);
     LOG("Render pass created successfully");
 

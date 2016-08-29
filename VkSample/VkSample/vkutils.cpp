@@ -1,17 +1,9 @@
 #include "vkutils.h"
 
-static const std::vector<const char*> validationLayers = {
-    "VK_LAYER_LUNARG_standard_validation"
-};
 
 static const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
-
-
-VkFormat hackFormat;
-std::vector<VkImageView> imageViews;
-
 
 mVkInstance::mVkInstance()
 {
@@ -418,26 +410,26 @@ bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu, const mVk
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)800;
-    viewport.height = (float)600;
+    viewport.x        = 0.0f;
+    viewport.y        = 0.0f;
+    viewport.width    = (float)WIDTH;
+    viewport.height   = (float)HEIGHT;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkExtent2D rect;
-    rect.width = 800;
-    rect.height = 600;
-    VkRect2D scissor = {};
-    scissor.offset = { 0, 0 };
-    scissor.extent = rect;
+    rect.width        = WIDTH;
+    rect.height       = HEIGHT;
+    VkRect2D scissor  = {};
+    scissor.offset    = { 0, 0 };
+    scissor.extent    = rect;
 
     VkPipelineViewportStateCreateInfo viewportState = {};
-    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
-    viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
+    viewportState.pViewports    = &viewport;
+    viewportState.scissorCount  = 1;
+    viewportState.pScissors     = &scissor;
 
     VkPipelineRasterizationStateCreateInfo rasterizer = {};
     rasterizer.sType                    = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -500,10 +492,10 @@ bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu, const mVk
     return true;
 }
 
-bool mVkRenderPass::createRenderPass(const mVkDevice& gpu)
+bool mVkRenderPass::createRenderPass(const mVkDevice& gpu, const mVkSwapChain& swapChain)
 {
     VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format         = hackFormat;
+    colorAttachment.format         = swapChain.getColorFormat();
     colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -513,13 +505,13 @@ bool mVkRenderPass::createRenderPass(const mVkDevice& gpu)
     colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachmentRef.attachment  = 0;
+    colorAttachmentRef.layout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkSubpassDescription subPass = {};
-    subPass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subPass.colorAttachmentCount = 1;
-    subPass.pColorAttachments    = &colorAttachmentRef;
+    VkSubpassDescription subPass   = {};
+    subPass.pipelineBindPoint      = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subPass.colorAttachmentCount   = 1;
+    subPass.pColorAttachments      = &colorAttachmentRef;
 
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -540,6 +532,7 @@ bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu, const mVkRenderPass&
     VkResult ret = VK_SUCCESS;
     _swapChainFramebuffers.resize(_swapChainImageViews.size());
 
+    // One Frame buffer per swap chain image.
     for (size_t i = 0; i < _swapChainImageViews.size(); i++) 
     {
         VkImageView attachments[] = {
@@ -551,8 +544,8 @@ bool mVkSwapChain::createFramebuffers(const mVkDevice& gpu, const mVkRenderPass&
         framebufferInfo.renderPass      = rp.getRenderPass();
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.pAttachments    = attachments;
-        framebufferInfo.width           = 800;
-        framebufferInfo.height          = 600;
+        framebufferInfo.width           = WIDTH;
+        framebufferInfo.height          = HEIGHT;
         framebufferInfo.layers          = 1;
 
         ret = vkCreateFramebuffer(gpu.getDevice(), &framebufferInfo, nullptr, &_swapChainFramebuffers[i]);
@@ -574,11 +567,11 @@ bool recordCommands(const mVkCommandPool& cmdPool, mVkSwapChain swapChain,
         vkBeginCommandBuffer(cmdPool.getDrawCmdBuf()[i], &beginInfo);
 
         VkRenderPassBeginInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = rp.getRenderPass();
-        renderPassInfo.framebuffer = swapChain.getFrameBuffers()[i];
+        renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass        = rp.getRenderPass();
+        renderPassInfo.framebuffer       = swapChain.getFrameBuffers()[i];
         renderPassInfo.renderArea.offset = { 0, 0 };
-        renderPassInfo.renderArea.extent = { 800, 600 };
+        renderPassInfo.renderArea.extent = { WIDTH, HEIGHT };
 
         VkClearValue clearColor = { 0.2f, 0.9f, 0.2f, 1.0f };
         renderPassInfo.clearValueCount = 1;
@@ -592,7 +585,8 @@ bool recordCommands(const mVkCommandPool& cmdPool, mVkSwapChain swapChain,
             vkCmdEndRenderPass(cmdPool.getDrawCmdBuf()[i]);
         }
 
-        if (vkEndCommandBuffer(cmdPool.getDrawCmdBuf()[i]) != VK_SUCCESS) {
+        if (vkEndCommandBuffer(cmdPool.getDrawCmdBuf()[i]) != VK_SUCCESS) 
+        {
             throw std::runtime_error("failed to record command buffer!");
         }
     }
@@ -623,7 +617,8 @@ bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(gpu.getDeviceQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+    if (vkQueueSubmit(gpu.getDeviceQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) 
+    {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 

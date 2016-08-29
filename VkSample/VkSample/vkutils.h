@@ -149,10 +149,11 @@ private:
     uint32_t            _presentQueueFamilyIndex;
 };
 
+class mVkSwapChain;
 class mVkRenderPass
 {
 public:
-    bool createRenderPass(const mVkDevice& gpu);
+    bool createRenderPass(const mVkDevice& gpu, const mVkSwapChain& swapChain);
 
     inline const VkRenderPass& getRenderPass() const
     {

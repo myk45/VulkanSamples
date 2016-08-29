@@ -32,6 +32,30 @@ static DemoBase* chooseDemos(const std::vector<DemoBase*> demoList)
     return demoList[demoOption - 1];
 }
 
+void printOptions()
+{
+    int option;
+    printf("===================\n");
+    printf("1. Run demos\n");
+    printf("2. Run assignment\n");
+    printf("3. Get Info on demos\n");
+    printf("Choose option number\n");
+    printf("===================\n");
+    scanf("%d", &option);
+
+    switch (option)
+    {
+    case 1:
+        break;
+    case 2:
+        break;
+    case 3:
+        break;
+    default:
+        break;
+    }
+}
+
 int main() 
 {
     std::vector<DemoBase*> demoList;
