@@ -61,7 +61,7 @@ public:
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        _window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+        _window = glfwCreateWindow(width, height, "Vulkan Samples", nullptr, nullptr);
         assert(_window);
 
         return _window != nullptr;
@@ -69,10 +69,12 @@ public:
 
     bool createWindowSurface(const mVkInstance& inst)
     {
-        if (glfwCreateWindowSurface(inst.getInstance(), _window, nullptr, &_surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
+        return glfwCreateWindowSurface(inst.getInstance(), _window, nullptr, &_surface) == VK_SUCCESS;
+    }
 
+    bool cleanUp()
+    {
+        glfwDestroyWindow(_window);
         return true;
     }
 
@@ -187,76 +189,6 @@ public:
     }
 
 private:
-    struct SwapChainSupportDetails {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-        if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
-            return{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-        }
-
-        for (const auto& availableFormat : availableFormats) {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-                return availableFormat;
-            }
-        }
-
-        return availableFormats[0];
-    }
-
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes) {
-        for (const auto& availablePresentMode : availablePresentModes) {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                return availablePresentMode;
-            }
-        }
-
-        return VK_PRESENT_MODE_FIFO_KHR;
-    }
-
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-        if (capabilities.currentExtent.width != 150000) {
-            return capabilities.currentExtent;
-        }
-        else {
-            VkExtent2D actualExtent = { WIDTH, HEIGHT };
-
-            actualExtent.width = WIDTH;// max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-            actualExtent.height = HEIGHT;// max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-            return actualExtent;
-        }
-    }
-
-    SwapChainSupportDetails querySwapChainSupport(const mVkDevice& gpu, const glfwWindowHelper& glfwWindow)
-    {
-        SwapChainSupportDetails details;
-
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu.getPhysicalDevice(), glfwWindow.getSurface(), &details.capabilities);
-
-        uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), glfwWindow.getSurface(), &formatCount, nullptr);
-
-        if (formatCount != 0) {
-            details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.getPhysicalDevice(), glfwWindow.getSurface(), &formatCount, details.formats.data());
-        }
-
-        uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(gpu.getPhysicalDevice(), glfwWindow.getSurface(), &presentModeCount, nullptr);
-
-        if (presentModeCount != 0) 
-        {
-            details.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(gpu.getPhysicalDevice(), glfwWindow.getSurface(), &presentModeCount, details.presentModes.data());
-        }
-
-        return details;
-    }
-
     uint32_t                   _width;
     uint32_t                   _height;
     VkSwapchainKHR             _swapChain;

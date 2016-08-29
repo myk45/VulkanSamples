@@ -81,11 +81,14 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Sample1.cpp" />
+    <ClCompile Include="demobase.cpp" />
+    <ClCompile Include="demos\demo1.cpp" />
     <ClCompile Include="VkSample.cpp" />
     <ClCompile Include="vkutils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="demobase.h" />
+    <ClInclude Include="demos\demo1.h" />
     <ClInclude Include="vkutils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

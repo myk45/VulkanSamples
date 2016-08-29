@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\demos">
+      <UniqueIdentifier>{e27d2a22-2222-4853-bfe6-539a6b3dc4e0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -21,16 +24,25 @@
     <ClCompile Include="VkSample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Sample1.cpp">
+    <ClCompile Include="vkutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vkutils.cpp">
+    <ClCompile Include="demos\demo1.cpp">
+      <Filter>Source Files\demos</Filter>
+    </ClCompile>
+    <ClCompile Include="demobase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vkutils.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="demobase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="demos\demo1.h">
+      <Filter>Source Files\demos</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
