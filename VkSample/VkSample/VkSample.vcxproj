@@ -78,15 +78,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="assignmentbase.cpp" />
+    <ClCompile Include="assignments\assignment1.cpp" />
     <ClCompile Include="demobase.cpp" />
     <ClCompile Include="demos\demo1.cpp" />
     <ClCompile Include="VkSample.cpp" />
     <ClCompile Include="vkutils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="assignmentbase.h" />
+    <ClInclude Include="assignments\assignment1.h" />
     <ClInclude Include="demobase.h" />
     <ClInclude Include="demos\demo1.h" />
     <ClInclude Include="vkutils.h" />

@@ -16,9 +16,9 @@
     <Filter Include="Source Files\demos">
       <UniqueIdentifier>{e27d2a22-2222-4853-bfe6-539a6b3dc4e0}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="ReadMe.txt" />
+    <Filter Include="Source Files\assignment">
+      <UniqueIdentifier>{3c70a6a8-3a7b-4266-8f72-80835432db54}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VkSample.cpp">
@@ -33,6 +33,12 @@
     <ClCompile Include="demobase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="assignments\assignment1.cpp">
+      <Filter>Source Files\assignment</Filter>
+    </ClCompile>
+    <ClCompile Include="assignmentbase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vkutils.h">
@@ -43,6 +49,12 @@
     </ClInclude>
     <ClInclude Include="demos\demo1.h">
       <Filter>Source Files\demos</Filter>
+    </ClInclude>
+    <ClInclude Include="assignments\assignment1.h">
+      <Filter>Source Files\assignment</Filter>
+    </ClInclude>
+    <ClInclude Include="assignmentbase.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

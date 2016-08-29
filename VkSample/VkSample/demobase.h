@@ -6,12 +6,12 @@
 class DemoBase
 {
 public:
-    DemoBase()  {}
-    ~DemoBase() {}
+    DemoBase()          {}
+    virtual ~DemoBase() {}
 
-    bool init();
+    virtual bool init();
     virtual bool run();
-    bool cleanUp();
+    virtual bool cleanUp();
 
     const glfwWindowHelper& getWindowHelper() const
     {

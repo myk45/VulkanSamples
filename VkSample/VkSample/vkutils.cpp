@@ -137,7 +137,7 @@ bool mVkDevice::createDevice()
         devCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
         VkPhysicalDeviceFeatures features = {};
-        features.shaderClipDistance = VK_TRUE;
+        features.shaderClipDistance    = VK_TRUE;
         devCreateInfo.pEnabledFeatures = &features;
     }
 
@@ -344,7 +344,7 @@ static std::vector<char> readFile(const std::string& filename)
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
+        VK_LOG("failed to open file!");
     }
 
     size_t fileSize = (size_t)file.tellg();
@@ -366,7 +366,7 @@ static void createShaderModule(const std::vector<char>& code, VkShaderModule& sh
     createInfo.pCode = (uint32_t*)code.data();
 
     if (vkCreateShaderModule(gpu.getDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
+        VK_LOG("failed to create shader module!");
     }
 }
 
@@ -466,8 +466,9 @@ bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu, const mVk
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    if (vkCreatePipelineLayout(gpu.getDevice(), &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create pipeline layout!");
+    if (vkCreatePipelineLayout(gpu.getDevice(), &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) 
+    {
+        VK_LOG("failed to create pipeline layout!");
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -485,8 +486,9 @@ bool mVkGraphicsPipeline::createGraphicsPipeline(const mVkDevice& gpu, const mVk
     pipelineInfo.subpass                = 0;
     pipelineInfo.basePipelineHandle     = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(gpu.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create graphics pipeline!");
+    if (vkCreateGraphicsPipelines(gpu.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) 
+    {
+        VK_LOG("failed to create graphics pipeline!");
     }
 
     return true;
@@ -521,7 +523,7 @@ bool mVkRenderPass::createRenderPass(const mVkDevice& gpu, const mVkSwapChain& s
     renderPassInfo.pSubpasses      = &subPass;
 
     if (vkCreateRenderPass(gpu.getDevice() , &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create render pass!");
+        VK_LOG("failed to create render pass!");
     }
 
     return true;
@@ -587,7 +589,7 @@ bool recordCommands(const mVkCommandPool& cmdPool, mVkSwapChain swapChain,
 
         if (vkEndCommandBuffer(cmdPool.getDrawCmdBuf()[i]) != VK_SUCCESS) 
         {
-            throw std::runtime_error("failed to record command buffer!");
+            VK_LOG("failed to record command buffer!");
         }
     }
     
@@ -619,7 +621,7 @@ bool drawFrame(const mVkCommandPool& cmdPool, const mVkDevice& gpu, mVkSwapChain
 
     if (vkQueueSubmit(gpu.getDeviceQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) 
     {
-        throw std::runtime_error("failed to submit draw command buffer!");
+        VK_LOG("failed to submit draw command buffer!");
     }
 
     VkPresentInfoKHR presentInfo = {};
@@ -647,7 +649,7 @@ bool mVkSemaphore::createSemaphore(const mVkDevice& gpu)
     if (vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(gpu.getDevice(), &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create semaphores!");
+        VK_LOG("failed to create semaphores!");
     }
 
     return true;
