@@ -1,10 +1,9 @@
 #include "demobase.h"
 #include "demos/demo1.h"
 
-static bool initializeDemos(std::vector<DemoBase*>& demoList)
+static bool createDemos(std::vector<DemoBase*>& demoList)
 {
     DemoBase* demo1 = new Demo1;
-    demo1->init();
     demoList.push_back(demo1);
 
     return true;
@@ -18,14 +17,20 @@ static DemoBase* chooseDemos(const std::vector<DemoBase*> demoList)
     system("cls");
 #endif
 
-    printf("===================\n");
+    int i = 1;
+    printf("=================== Demo list =======================\n");
+    for (auto it = demoList.begin(); it != demoList.end(); it++)
+    {
+        printf("(%d) %s\n", i++, (*it)->getInfo());
+    }
+    printf("=====================================================\n");
     printf("Choose demo number\n");
-    printf("===================\n");
     scanf("%d", &demoOption);
 
     if (demoList.size() < demoOption)
     {
-        printf("\nInvalid input. Exiting!\n");
+        printf("\nInvalid input. Press key to exit.\n");
+        getchar();
         exit(-1);
     }
 
@@ -59,17 +64,18 @@ void printOptions()
 int main() 
 {
     std::vector<DemoBase*> demoList;
-    bool ret = initializeDemos(demoList);
+    bool ret = createDemos(demoList);
 
-    while (1) 
+    while (ret) 
     {
         DemoBase* demo = chooseDemos(demoList);
+        ret = demo->init();
         while (ret && !glfwWindowShouldClose(demo->getWindowHelper().getWindowHandle()))
         {
             glfwPollEvents();
             ret = demo->run();
         }
-        demo->cleanUp();
+        ret = demo->cleanUp();
     }
 
     return 0;

@@ -13,6 +13,9 @@ public:
     virtual bool run();
     virtual bool cleanUp();
 
+    // Every demo is different!
+    virtual const char* getInfo() const = 0;
+
     const glfwWindowHelper& getWindowHelper() const
     {
         return _glfwHelper;

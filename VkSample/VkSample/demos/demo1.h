@@ -10,6 +10,7 @@ public:
     ~Demo1() {}
 
     virtual bool run();
+    virtual const char* getInfo() const;
 
 protected:
 };
