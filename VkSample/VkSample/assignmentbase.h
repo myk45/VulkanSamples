@@ -11,7 +11,7 @@ public:
 
     virtual bool init();
     virtual bool run();
-    virtual bool cleanUp();
+    virtual bool cleanUp() {}
 
     virtual bool doAssigment() { assert(0); }
 

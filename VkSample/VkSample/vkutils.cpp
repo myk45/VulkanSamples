@@ -13,8 +13,12 @@ mVkInstance::mVkInstance()
 bool mVkInstance::createInstance()
 {
     const char* extensionNames[] = {
+#ifdef WIN32
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-        VK_KHR_SURFACE_EXTENSION_NAME
+#else
+	VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+#endif
+	"VK_KHR_surface"
     };
 
     VkApplicationInfo app;
